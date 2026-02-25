@@ -16,19 +16,169 @@
   </header>
 
   <!-- Main Content -->
-  <main class="flex-grow flex items-center justify-center">
-    <div class="bg-white p-8 rounded shadow-md w-full max-w-2xl text-center">
-      <h2 class="text-2xl font-semibold mb-4">Welcome, <%= user.name %>!</h2>
-      <p class="text-gray-700">This is your dashboard. Here you can manage your tasks.</p>
+  <main class="flex-grow flex flex-col items-center justify-start p-6 space-y-6">
 
-      <!-- Example button to add tasks -->
-      <div class="mt-6">
-        <a href="/tasks" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors">
-          View Tasks
-        </a>
+    <div class="bg-white p-6 rounded shadow-md w-full max-w-3xl">
+      <h2 class="text-2xl font-semibold mb-4">Welcome, <%= user.name %>!</h2>
+      
+      <!-- Create Task Form -->
+      <form id="createTaskForm" class="flex flex-col md:flex-row gap-2">
+        <input type="text" id="title" placeholder="Task title" class="flex-grow px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        <input type="text" id="description" placeholder="Description" class="flex-grow px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors">Add Task</button>
+      </form>
+
+      <!-- Response Message -->
+      <div id="message" class="mt-2 text-center text-red-500 hidden"></div>
+
+      <!-- Tasks List -->
+      <div id="tasksList" class="mt-6 space-y-4">
+        <!-- Tasks will be rendered here via JS -->
       </div>
     </div>
+
   </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const createForm = document.getElementById("createTaskForm");
+      const tasksList = document.getElementById("tasksList");
+      const messageDiv = document.getElementById("message");
+
+      // Fetch and render tasks
+      const fetchTasks = async () => {
+        try {
+          const res = await fetch("/tasks");
+          const data = await res.json();
+          if (!data.success) return;
+
+          tasksList.innerHTML = "";
+          data.tasks.forEach(task => {
+            const taskDiv = document.createElement("div");
+            taskDiv.className = "flex justify-between items-center p-2 border rounded shadow-sm";
+            taskDiv.innerHTML = `
+              <div>
+                <h3 class="font-semibold ${task.status === 'completed' ? 'line-through text-gray-500' : ''}">
+                  ${task.title} 
+                  <span class="text-sm font-normal px-2 py-1 rounded ${task.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}">
+                    ${task.status.toUpperCase()}
+                  </span>
+                </h3>
+                <p class="text-gray-600">${task.description || ''}</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 edit-btn" data-id="${task._id}">Edit</button>
+                <button class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 toggle-btn" data-id="${task._id}" data-status="${task.status}">
+                  ${task.status === 'pending' ? 'Complete' : 'Undo'}
+                </button>
+                <button class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 delete-btn" data-id="${task._id}">Delete</button>
+              </div>
+            `;
+            tasksList.appendChild(taskDiv);
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      };
+
+      fetchTasks();
+
+      // Create Task
+      createForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const title = document.getElementById("title").value.trim();
+        const description = document.getElementById("description").value.trim();
+
+        try {
+          const res = await fetch("/tasks", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, description })
+          });
+          const data = await res.json();
+          if (data.success) {
+            fetchTasks();
+            createForm.reset();
+            messageDiv.classList.add("hidden");
+          } else {
+            messageDiv.textContent = data.message || "Failed to add task";
+            messageDiv.classList.remove("hidden");
+          }
+        } catch (err) {
+          console.error(err);
+          messageDiv.textContent = "Error adding task";
+          messageDiv.classList.remove("hidden");
+        }
+      });
+
+      // Delegate Edit / Complete / Delete buttons
+      tasksList.addEventListener("click", async (e) => {
+        const target = e.target;
+        const id = target.dataset.id;
+        if (!id) return;
+
+        // Delete Task
+        if (target.classList.contains("delete-btn")) {
+          try {
+            await fetch(`/tasks/${id}`, { method: "DELETE" });
+            fetchTasks();
+          } catch (err) { console.error(err); }
+        }
+
+        // Toggle Complete / Undo
+        if (target.classList.contains("toggle-btn")) {
+          const newStatus = target.dataset.status === "pending" ? "completed" : "pending";
+          try {
+            await fetch(`/tasks/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: newStatus })
+            });
+            fetchTasks();
+          } catch (err) { console.error(err); }
+        }
+
+        // Edit Task
+        if (target.classList.contains("edit-btn")) {
+          const taskDiv = target.closest("div.flex.justify-between");
+          const titleEl = taskDiv.querySelector("h3");
+          const descEl = taskDiv.querySelector("p");
+          const currentTitle = titleEl.textContent.trim();
+          const currentDesc = descEl.textContent.trim();
+
+          // Replace task content with edit form
+          taskDiv.innerHTML = `
+            <input type="text" class="edit-title border px-2 py-1 rounded w-1/2" value="${currentTitle}">
+            <input type="text" class="edit-desc border px-2 py-1 rounded w-1/2" value="${currentDesc}">
+            <button class="bg-green-500 text-white px-3 py-1 rounded save-btn">Save</button>
+            <button class="bg-gray-400 text-white px-3 py-1 rounded cancel-btn">Cancel</button>
+          `;
+        }
+
+        // Save edited task
+        if (target.classList.contains("save-btn")) {
+          const taskDiv = target.closest("div.flex.justify-between");
+          const newTitle = taskDiv.querySelector(".edit-title").value.trim();
+          const newDesc = taskDiv.querySelector(".edit-desc").value.trim();
+
+          try {
+            await fetch(`/tasks/${id}`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ title: newTitle, description: newDesc })
+            });
+            fetchTasks();
+          } catch (err) { console.error(err); }
+        }
+
+        // Cancel edit
+        if (target.classList.contains("cancel-btn")) {
+          fetchTasks();
+        }
+
+      });
+    });
+  </script>
 
 </body>
 </html>

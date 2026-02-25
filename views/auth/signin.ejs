@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         try {
-            const res = await fetch("/login", {
+            const res = await fetch("/signin", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
@@ -85,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (data.success) {
                 // Success → redirect to dashboard
-                window.location.href = data.redirect || "/dashboard";
+                window.location.href = data.redirect || "/";
             } else {
                 // Show error message
                 messageDiv.textContent = data.message || "Login failed";
