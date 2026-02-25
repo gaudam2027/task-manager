@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-blue-500 text-white p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">Task Manager Dashboard</h1>
+    <a href="/logout" class="bg-white text-blue-500 px-4 py-2 rounded hover:bg-gray-200">Logout</a>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow flex items-center justify-center">
+    <div class="bg-white p-8 rounded shadow-md w-full max-w-2xl text-center">
+      <h2 class="text-2xl font-semibold mb-4">Welcome, <%= user.name %>!</h2>
+      <p class="text-gray-700">This is your dashboard. Here you can manage your tasks.</p>
+
+      <!-- Example button to add tasks -->
+      <div class="mt-6">
+        <a href="/tasks" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors">
+          View Tasks
+        </a>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>
