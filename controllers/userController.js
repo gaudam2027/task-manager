@@ -85,9 +85,20 @@ const signIn = async (req, res) => {
     }
 };
 
+const logout = (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            console.error("Logout error:", err);
+            return res.status(500).send("Could not log out. Try again.");
+        }
+        res.clearCookie('connect.sid');
+        res.redirect('/signin');
+    });
+};
 module.exports = {
     loadSignUp,
     signUp,
     loadsignIn,
-    signIn
+    signIn,
+    logout
 }

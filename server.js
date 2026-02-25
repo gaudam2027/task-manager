@@ -4,9 +4,12 @@ const session = require('express-session');
 const path = require('path')
 const http = require('http')
 const connectDB = require("./config/db");
+const nocache = require('nocache');
 const app = express()
 
 connectDB();
+
+app.use(nocache())
 
 // Port
 const Port = process.env.PORT || 3000;

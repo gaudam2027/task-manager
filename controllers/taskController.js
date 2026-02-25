@@ -6,7 +6,7 @@ const loadDashboard = async (req, res) => {
         const user = await User.findById(req.session.userId);
         const tasks = await Task.find({ user: req.session.userId, isDeleted: false });
 
-        res.render("dashboard", { user, tasks }); // pass tasks to dashboard view
+        res.render("dashboard", { user, tasks }); 
     } catch (err) {
         console.error(err);
         res.redirect("/login");
@@ -98,10 +98,13 @@ const deleteTask = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+
 module.exports = {
     loadDashboard,
     createTask,
     getTasks,
     updateTask,
-    deleteTask
+    deleteTask,
 };
